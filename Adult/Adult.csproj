@@ -136,6 +136,7 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="ApiControllers\ApiConstants\VideoConstants.cs" />
     <Compile Include="ApiControllers\VideoController.cs" />
     <Compile Include="App_Start\BundleConfig.cs" />
     <Compile Include="App_Start\FilterConfig.cs" />
@@ -155,9 +156,10 @@
     <Content Include="assets\app\directives\directives.js" />
     <Content Include="assets\app\shared\constants\constants.js" />
     <Content Include="assets\app\shared\filters\trust-html.js" />
-    <Content Include="assets\app\shared\services\bootstrapper.js" />
+    <Content Include="assets\app\shared\services\videoServices.js" />
     <Content Include="assets\app\shared\directives\tooltip-init.js" />
     <Content Include="assets\app\shared\services\pinVideo.js" />
+    <Content Include="assets\app\templates\body\filter.html" />
     <Content Include="assets\app\templates\body\videos.html" />
     <Content Include="assets\app\templates\dashboard.html" />
     <Content Include="assets\app\templates\body\category.html" />
@@ -165,6 +167,12 @@
     <Content Include="assets\app\templates\head\logo.html" />
     <Content Include="assets\app\templates\head\modal.html" />
     <Content Include="assets\img\homer.svg" />
+    <Content Include="assets\sass\Adult.css">
+      <DependentUpon>Adult.scss</DependentUpon>
+    </Content>
+    <Content Include="assets\sass\Adult.min.css">
+      <DependentUpon>Adult.css</DependentUpon>
+    </Content>
     <Content Include="Content\bootstrap.css" />
     <Content Include="Content\bootstrap.min.css" />
     <Content Include="favicon.ico" />
@@ -179,8 +187,14 @@
     <Content Include="Scripts\bootstrap.js" />
     <Content Include="Scripts\bootstrap.min.js" />
     <Content Include="Scripts\angular-route.min.js.map" />
-    <Content Include="Scripts\angular.min.js.map" />
     <Content Include="Scripts\angular-messages.min.js.map" />
+    <Content Include="assets\sass\_adult-modal.scss" />
+    <Content Include="assets\sass\Adult.scss" />
+    <Content Include="assets\sass\Adult.css.map">
+      <DependentUpon>Adult.css</DependentUpon>
+    </Content>
+    <Content Include="assets\sass\_adult-video.scss" />
+    <Content Include="Scripts\angular.min.js.map" />
     <None Include="Scripts\jquery-1.10.2.intellisense.js" />
     <Content Include="Scripts\jquery-1.10.2.js" />
     <Content Include="Scripts\jquery-1.10.2.min.js" />
@@ -190,6 +204,7 @@
     <Content Include="Scripts\jquery.validate.unobtrusive.js" />
     <Content Include="Scripts\jquery.validate.unobtrusive.min.js" />
     <Content Include="Scripts\modernizr-2.6.2.js" />
+    <Content Include="Scripts\ng-infinite-scroll.js" />
     <Content Include="Scripts\ng-infinite-scroll.min.js" />
     <Content Include="Scripts\respond.js" />
     <Content Include="Scripts\respond.min.js" />
