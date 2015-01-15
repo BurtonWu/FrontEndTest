@@ -7,6 +7,7 @@ using System.Web.Http;
 using Adult.Server.Mongo;
 using Adult.Domain.Mongo.Video;
 using Adult.ApiControllers.ApiConstants;
+using Adult.Core.Constants;
 
 namespace Adult.ApiControllers
 {
@@ -16,6 +17,13 @@ namespace Adult.ApiControllers
         private MongoService _MongoService { get { return new MongoService(); } }
         
         [HttpGet]
+        [Route("getunique/{bsonId}")]
+        public Video GetUnique(String bsonId)
+        {
+            return _MongoService.getVideo(bsonId);
+        }
+
+        [HttpGet]
         [Route("get/{startIndex:int}")]
         public Video[] Get(Int32 startIndex)
         {
@@ -23,14 +31,19 @@ namespace Adult.ApiControllers
         }
         
         [HttpGet]
-        [Route("queryget/{keywords}")]
-        public Video[] QueryGet(String keywords)
+        [Route("queryget/{keywordString}")]
+        public Video[] QueryGet(String keywordString)
         {
-            //Strings are passed in as "\"string"\"
-            return _MongoService.getQueryVideos(keywords.Replace('"', ' ').Trim().Split(new char[]{' '}));
+            return _MongoService.getQueryVideos(keywordString.Split(new char[]{' '}));
         }
 
+        [HttpGet]
+        [Route("relatedget/{keywordString}")]
+        public Video[] RelatedGet(String keywordString)
+        {
 
+            return _MongoService.getQueryVideos(keywordString.Split(new char[] { ' ' }), AdultConstants.AMOUNT_RELATED_VID);
+        }
         //[HttpGet]
         //[Route("getembed/{BsonIdStrings}")]
         //public String[] GetEmbed([FromUri] String[] BsonIdStrings)

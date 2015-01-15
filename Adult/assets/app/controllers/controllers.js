@@ -1,7 +1,13 @@
 ﻿angular.module('controllers', [])
-    .run(['$rootScope', function ($rootScope) {
-        //for tooltip purposes
-        $rootScope.totalPinnedVideos = 0;
+    .run(['$cookieStore', 'localStorageService', function ($cookieStore, localStorageService) {
+        //localStorageService.clearAll();  
+        $cookieStore.remove('pageNumber');
+        $cookieStore.remove('browseHistory');
+        $cookieStore.remove('frontNavLimited');
+        $cookieStore.remove('atMainPage');
+        $cookieStore.remove('backNavLimited');
+        $cookieStore.get('currentVideo');
+        //for testing, uncomment this to clear storage/cookies
     }])
     .controller('LoginCtrl', ['$scope', function ($scope) {
         $scope.disableInput = new function () {
@@ -16,6 +22,104 @@
                 it uses the constant AMOUNT_PER_LOAD as does VideoCtrl
                 
      */
+    .controller('DashboardCtrl', ['$scope', '$rootScope', '$cookieStore', function ($scope, $rootScope, $cookieStore) {
+        $cookieStore.put('atMainPage', true);
+        $scope.atMainPage = true;
+        $scope.$watch(
+            function () {
+                return $cookieStore.get('atMainPage');
+            },
+            function (value) {
+                $scope.atMainPage = value;
+        });
+
+        $scope.backNavLimited = true;
+        $scope.frontNavLimited = true;
+        $scope.$watch(
+            function () {
+                return $cookieStore.get('frontNavLimited');
+            },
+            function (value) {
+                if (value !== undefined) {
+                    $scope.frontNavLimited = value;
+                }
+        });
+        $scope.$watch(
+            function () {
+                return $cookieStore.get('backNavLimited');
+            },
+            function (value) {
+                if (value !== undefined) {
+                    $scope.backNavLimited = value;
+                    //console.log('backNavLimited ' + $scope.backNavLimited);
+                }
+            });
+
+        $scope.$on('subVideoSignal', function (event, subVidData) {
+            $scope.atMainPage = false;
+            $rootScope.$broadcast('navSubVidSignal', subVidData);
+        });
+    }])
+    .controller('SubvideoCtrl', ['$scope', '$rootScope', '$cookieStore', 'keywordVideoService', 'historyService', function ($scope, $rootScope, $cookieStore, keywordVideoService, historyService) {
+        $scope.videoData = {};
+        $scope.relatedVideos = [];
+
+        $scope.relatedQuery = function () {
+            var keywordString = $scope.videoData.maintags.concat($scope.videoData.subtags).join(' ');
+            keywordVideoService.getRelatedVideos(keywordString).then(
+                function (relatedVideos) {
+                    $scope.relatedVideos = $scope.relatedVideos.concat(relatedVideos);
+                },
+                function () {
+
+                });
+        }
+        
+        $scope.navVideoView = function (vidObj, isNewNav) {
+            if (vidObj != null) {
+                console.log(vidObj);
+                $scope.videoData = vidObj;
+                $scope.relatedVideos = [];
+                $scope.relatedQuery();
+                if (isNewNav) {
+                    historyService.newForward(vidObj);
+                }
+            }
+            //else, we're going back to main page
+        }
+        //isNewNav - navigation not caused by navigation buttons
+        $scope.$on('navSubVidSignal', function (event, subVidData) {
+            $scope.navVideoView(subVidData.vidObj, subVidData.isNewNav);
+        });
+
+        $scope.pinVideo = function (title, embedHtml) {
+            pinVidModal.pinVid(title, embedHtml);
+        }
+
+    }])
+    .controller('NavCtrl', ['$scope', '$cookieStore', 'historyService', function ($scope, $cookieStore, historyService) {
+        $scope.isFoward = undefined;
+
+        $scope.navigate = function () {
+            if ($scope.isFoward) {
+                historyService.forward().then(function (obj) {
+                    $scope.$emit('navSubVidSignal', { vidObj: obj, isNewNav: false });
+                });
+            }
+            else if ($scope.isFoward === false) {
+                var promise = historyService.backward();
+                if (promise !== null) {
+                    historyService.backward().then(function (obj) {
+                        $scope.$emit('navSubVidSignal', { vidObj: obj, isNewNav: false });
+                    });
+                }
+            }
+            else {
+                console.log('uninitalized attributes');
+            }
+        }
+        
+    }])
     .controller('CategoryCtrl', ['$scope', '$rootScope', 'getCategoryService', 'pinTagService', function ($scope, $rootScope, getCategoryService, pinTagService) {
         $scope.popularTags = [];
         $scope.getPopularTags = function () {
@@ -34,8 +138,6 @@
         }
     }])
     .controller('SearchCtrl', ['$scope', '$rootScope', 'keywordVideoService', function ($scope, $rootScope, keywordVideoService) {
-        $scope.queryString = "";
-        $scope.keywords = "";
         $scope.queriedVideos = [];
 
         $scope.keywordQuery = function (keywords) {
@@ -46,27 +148,27 @@
                 },
                 function () {
                 });
-            console.log($scope.queriedVideos.length);
             $rootScope.$broadcast('queryResult', [true, $scope.queriedVideos]);
         }
-        
-      
     }])
-    .controller('VideoCtrl', ['$scope', '$rootScope','$interval', 'generalVideoService', 'videoConstants', 'pinVidModal','pinTagService', function ($scope, $rootScope, $interval, generalVideoService, videoConstants, pinVidModal, pinTagService) {
-        $scope.queryFlag = false;
+    .controller('VideoCtrl', ['$scope', '$rootScope', '$cookieStore', 'localStorageService', 'generalVideoService', 'videoConstants', 'pinVidModal', 'pinTagService',
+        function ($scope, $rootScope, $cookieStore, localStorageService, generalVideoService, videoConstants, pinVidModal, pinTagService) {
+
+        var queryFlag = false;
         $scope.queriedVideos = [];
-        $scope.startIndex = 0;
+        var currentIndex = 0;
         $scope.videos = [];
         $scope.tagsForQuery = [];
         $scope.videosLoaded = false;
-
+       
         $scope.$on('queryResult', function (event, data) {
             $scope.queriedVideos = [];
             $scope.queriedVideos = $scope.queriedVideos.concat(data[1]);
-            $scope.queryFlag = data[0];
+            //when we have a query, show queried videos, not main videos
+            queryFlag = data[0];
             //clear the videos whenever we get a new query
             $scope.videos = [];
-            $scope.startIndex = 0;
+            currentIndex = 0;
         });
         
         $scope.$on('tagFilterUpdate', function () {
@@ -81,41 +183,50 @@
                 function (videoArray) {
                     //$scope.updateGeneralVideo(videoArray);
                     $scope.videos = $scope.videos.concat(videoArray);
-                    $scope.startIndex += videoConstants.AMOUNT_PER_LOAD;
+                    currentIndex += videoConstants.AMOUNT_PER_LOAD;
                     $scope.videosLoaded = true;
                 },
                 function () {
 
                 });
         }
-
         //Upon Query, we recieve a broadcast, and recieve the entire array of videos, and we update accordingly
         $scope.getQueryVideo = function () {
             $scope.videos = $scope.videos.concat($scope.queriedVideos.splice(0, videoConstants.AMOUNT_PER_LOAD));
         }
 
         $scope.getVideos = function () {
-            console.log('gen vid: ' + $scope.videos.length);
-            console.log('query vid: ' + $scope.queriedVideos.length);
-            if ($scope.queryFlag) {
+            if (queryFlag) {
                 $scope.getQueryVideo();
             }
             else {
-                $scope.getGeneralVideo($scope.startIndex);
+                $scope.getGeneralVideo(currentIndex);
             }
         }
 
         $scope.pinVideo = function (title, embedHtml) {
             pinVidModal.pinVid(title, embedHtml);
-            //update count, used for Tooltip in modal.html
-            $rootScope.totalPinnedVideos = pinVidModal.getSize();
+        }
+        //if a video was clicked on the main page
+        $scope.signalSubVideo = function (vidObject) {
+            $scope.$emit('subVideoSignal', {vidObj: vidObject, isNewNav: true});
         }
 
     }])
-    .controller('ModalCtrl', ['$scope', 'pinVidModal', function ($scope, pinVidModal) {
+    .controller('ModalCtrl', ['$scope', 'pinVidModal', 'localStorageService', function ($scope, pinVidModal, localStorageService) {
+        $scope.$watch(
+            function () {
+                return localStorageService.get('totalPinnedVideo') || 0;
+            },
+            function (value) {
+                $scope.numberOfPinnedVideos = value;
+        });
+
         $scope.pinnedVideos = [];
         $scope.getPinnedVideos = function () {
             $scope.pinnedVideos = $scope.pinnedVideos.concat(pinVidModal.getVid());
+            console.log("getpinnedvideos hit " + $scope.pinnedVideos.length);
+            console.log($scope.pinnedVideos);
         }
         
     }]);

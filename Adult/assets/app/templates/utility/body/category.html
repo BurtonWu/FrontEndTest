@@ -1,0 +1,8 @@
+﻿<div ng-init="getPopularTags()">
+    <div class="btn-group well category">
+        <div ng-repeat="tag in popularTags">
+            <div class="btn btn-tag" ng-click="bindTagForFilter(tag)" ng-bind="tag"></div>
+        </div>
+
+    </div>
+</div>
