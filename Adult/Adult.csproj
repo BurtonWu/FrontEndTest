@@ -136,7 +136,6 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="ApiControllers\ApiConstants\VideoConstants.cs" />
     <Compile Include="ApiControllers\CategoryController.cs" />
     <Compile Include="ApiControllers\VideoController.cs" />
     <Compile Include="App_Start\BundleConfig.cs" />
@@ -161,10 +160,13 @@
     <Content Include="assets\app\shared\services\categoryServices.js" />
     <Content Include="assets\app\shared\services\navigationServices.js" />
     <Content Include="assets\app\shared\services\pagingServices.js" />
+    <Content Include="assets\app\shared\services\updateInfoServices.js" />
     <Content Include="assets\app\shared\services\videoServices.js" />
     <Content Include="assets\app\shared\directives\shared-directives.js" />
     <Content Include="assets\app\shared\services\pinServices.js" />
+    <Content Include="assets\app\templates\main\categorybutton.html" />
     <Content Include="assets\app\templates\submain\navbutton.html" />
+    <Content Include="assets\app\templates\submain\pinbutton.html" />
     <Content Include="assets\app\templates\utility\body\search.html" />
     <Content Include="assets\app\templates\main\videos.html" />
     <Content Include="assets\app\templates\dashboard\dashboard.html" />

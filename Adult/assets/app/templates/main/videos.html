@@ -1,32 +1,28 @@
-﻿<!--PreLoad Videos to prevent ng-infinite parsing through empty data, throwing exception-->
-<span ng-init="getVideos()"></span>
+﻿<span>LocalSearch: </span><input type="text" ng-model="search.title" placeholder="Search loaded..."/>
 
-<span>LocalSearch: </span><input type="text" ng-model="search.title" placeholder="Search loaded..."/>
-<div ng-if="videosLoaded">
-    <div class="row video-container" infinite-scroll="getVideos()" infinite-scroll-distance="1">
-        <div ng-repeat="vid in videos | tagFilter:tagsForQuery | filter:search.title">
-         
-                <div class="panel panel-default">
-                    <div class="panel-heading">
-                        <a href="#" ng-click="signalSubVideo(vid)">
-                            <div class="text-format truncate-fade" ng-bind="vid.title"></div>
-                        </a>
-                    </div>
-                    <div class="panel-body">
-                        <div class="video-slide">
-                            <a href="#" ng-click="signalSubVideo(vid)">
-                                <img ng-src="{{vid.sprites[0]}}" />
-                                <img ng-src="{{vid.sprites[1]}}" />
-                                <img ng-src="{{vid.sprites[2]}}" />
-                                <img ng-src="{{vid.profileimg}}" />
-                            </a>
-                        </div>
-                    </div>
-                    <div class="panel-footer">
-                        <button class="=btn btn-default" ng-click="pinVideo(vid.title, vid.embed)">Pin-It</button>
-                    </div>
+<div class="row video-container" infinite-scroll="getVideos()" infinite-scroll-distance="1">
+    <div ng-repeat="vid in videos | tagFilter:tagsForQuery | filter:search.title">
+        <div class="panel panel-default">
+            <div class="panel-heading">
+                <a href="#" ng-click="signalSubVideo(vid)">
+                    <div class="text-format truncate-fade" ng-bind="vid.title"></div>
+                </a>
+            </div>
+            <div class="panel-body">
+                <div class="video-slide">
+                    <a href="#" ng-click="signalSubVideo(vid)">
+                        <img ng-src="{{vid.sprites[0]}}" />
+                        <img ng-src="{{vid.sprites[1]}}" />
+                        <img ng-src="{{vid.sprites[2]}}" />
+                        <img ng-src="{{vid.profileimg}}" />
+                    </a>
                 </div>
-         
+            </div>
+            <div class="panel-footer">
+                <pin-button title="{{vid.title}}" embed="{{vid.embed}}" videobsonid="{{vid._id}}"></pin-button>
+                <div class="well" ng-bind="vid.views"></div>
+            </div>
         </div>
     </div>
 </div>
+
