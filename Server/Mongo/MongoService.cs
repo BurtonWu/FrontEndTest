@@ -11,6 +11,7 @@ using MongoDB.Driver.Builders;
 using MongoDB.Bson;
 using Adult.Core.Constants;
 using Adult.Mongo.MongoHelpers;
+using Adult.Database.MongoDB;
 
 namespace Adult.Server.Mongo
 {
@@ -24,18 +25,17 @@ namespace Adult.Server.Mongo
         #region constructor
         public MongoService()
         {
-
             totalVideoCount = _MongoServer.videoCollection.Count();
         }
         #endregion
 
         #region HTTPGET
-        public Video getVideo(String BsonId)
+        public MongoVideo getVideo(String BsonId)
         {
-            return _MongoServer.videoCollection.AsQueryable<Video>().Single(x => x._id == BsonId);
+            return _MongoServer.videoCollection.AsQueryable<MongoVideo>().Single(x => x._id == BsonId);
         }
-      
-        public Video[] getVideos(Int32 amount, Int32 startIndex = 0)
+
+        public MongoVideo[] getVideos(Int32 amount, Int32 startIndex = 0)
         {
             //if(startIndex <= totalVideoCount && startIndex + amount > totalVideoCount){
             //     amount = (Int32)totalVideoCount - startIndex;
@@ -44,16 +44,15 @@ namespace Adult.Server.Mongo
             //    return new Video[0];
             //}
 
-            return _MongoServer.videoCollection.AsQueryable<Video>().Skip(startIndex).Take(amount).ToArray();
-          
+            return _MongoServer.videoCollection.AsQueryable<MongoVideo>().Skip(startIndex).Take(amount).ToArray();
         }
 
-        public Video[] getQueryVideos(String[] keywords, Int32 limitTo = -1)
+        public MongoVideo[] getQueryVideos(String[] keywords, Int32 limitTo = -1)
         {
             if(keywords.Length == 0)
-                return new Video[0];
-
-            var cursorEnumerator = _MongoServer.videoCollection.FindAllAs<Video>().GetEnumerator();
+                return new MongoVideo[0];
+           
+            var cursorEnumerator = _MongoServer.videoCollection.FindAllAs<MongoVideo>().GetEnumerator();
             var scoreBoard = new Dictionary<String, Int32>();
 
             while(cursorEnumerator.MoveNext())
@@ -79,10 +78,10 @@ namespace Adult.Server.Mongo
                 scoreBoard.Remove(key);
             }
             var searchResults = scoreBoard.OrderByDescending(x => x.Value).Select(x => x.Key).ToArray();
-            var videos = new Video[searchResults.Length];
+            var videos = new MongoVideo[searchResults.Length];
             for(int i = 0; i < searchResults.Length; i++)
             {
-                videos[i] = _MongoServer.videoCollection.AsQueryable<Video>().Single(x => x._id == searchResults[i]);
+                videos[i] = _MongoServer.videoCollection.AsQueryable<MongoVideo>().Single(x => x._id == searchResults[i]);
             }
             if (limitTo == -1)
                 return videos;
@@ -95,11 +94,19 @@ namespace Adult.Server.Mongo
             return _MongoServer.tagCollection.AsQueryable<Tags>().FirstOrDefault();
         }
         #endregion
-   
+
+        #region HTTPPOST
         public void incrementView(String BsonId)
         {
             Incrementor.incrementViewCount(BsonId, _MongoServer.videoCollection);
         }
+
+        public void incrementPin(String BsonId)
+        {
+            Incrementor.IncrementPinCount(BsonId, _MongoServer.videoCollection);
+        }
+        #endregion
+
 
     }
 }

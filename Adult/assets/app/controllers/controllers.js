@@ -59,6 +59,14 @@ angular.module('controllers', [])
             $scope.atMainPage = false;
             $rootScope.$broadcast('navSubVidSignal', subVidData);
         });
+
+        $scope.mostPinNavTab = function () {
+            $rootScope.$broadcast('MostPinNavTab');
+        }
+
+        $scope.mostViewNavTab = function () {
+            $rootScope.$broadcast('MostViewNavTab');
+        }
     }])
     .controller('SubvideoCtrl', ['$scope', '$rootScope', '$cookieStore', 'keywordVideoService', 'historyService', 'updateCount',
         function ($scope, $rootScope, $cookieStore, keywordVideoService, historyService, updateCount) {
@@ -81,6 +89,7 @@ angular.module('controllers', [])
 
             $scope.navVideoView = function (vidObj, isNewNav) {
                 if (vidObj != null) {
+                    //update ViewCount
                     updateCount.updateViewCount(vidObj._id);
                     $scope.videoData = vidObj;
                     $scope.relatedVideos = [];
@@ -95,11 +104,6 @@ angular.module('controllers', [])
             $scope.$on('navSubVidSignal', function (event, subVidData) {
                 $scope.navVideoView(subVidData.vidObj, subVidData.isNewNav);
             });
-
-            $scope.pinVideo = function (title, embedHtml) {
-                pinVidModal.pinVid(title, embedHtml);
-            }
-
         }])
     .controller('NavCtrl', ['$scope', '$cookieStore', 'historyService', function ($scope, $cookieStore, historyService) {
         $scope.isFoward = undefined;
@@ -183,38 +187,56 @@ angular.module('controllers', [])
         var currentIndex = 0;
         $scope.videos = [];
         $scope.tagsForQuery = [];
+        var videoType = "general";
 
-        //Generally, we continuously retrieve videos from the database and update locally
+        //Generally, we continuously retrieve videos from the database and update
         //increment startIndex for database after each load
         $scope.getGeneralVideo = function (startIndex) {
-            console.log(startIndex);
             console.log($scope.videos);
-            debugger;
-            generalVideoService.getVideos(startIndex)
-                .then(
-                    function (videoArray) {
-                        return videoArray
-                    },
-                    function () {
-                    })
-                .then(
-                    function (videoArray) {
-                    $scope.videos = $scope.videos.concat(videoArray);
+            switch (videoType) {
+                case "general":
                     currentIndex += videoConstants.AMOUNT_PER_LOAD;
-                });
+                    generalVideoService.getVideos(startIndex).then(
+                        function (videoArray) {
+                            $scope.videos = $scope.videos.concat(videoArray);
+                            console.log("general hit");
+                        });
+                    break;
+                case "pin":
+                    currentIndex += videoConstants.AMOUNT_PER_LOAD;
+                    generalVideoService.getMostPinVideos(startIndex).then(
+                        function (videoArray) {
+                            $scope.videos = $scope.videos.concat(videoArray);
+                            console.log("pin hit");
+                        });
+                    break;
+                case "view":
+                    currentIndex += videoConstants.AMOUNT_PER_LOAD;
+                    generalVideoService.getMostViewVideos(startIndex).then(
+                        function (videoArray) {
+                            $scope.videos = $scope.videos.concat(videoArray);
+                            console.log("view hit");
+                        });
+                    break;
+                default:
+                    console.log("error in videoType");
+            }
+            
         }
-
         //Upon Query, we recieve a broadcast, and recieve the entire array of videos, and we update accordingly
         $scope.getQueryVideos = function () {
             $scope.videos = $scope.videos.concat($scope.queriedVideos.splice(0, videoConstants.AMOUNT_PER_LOAD));
         }
 
         $scope.getVideos = function () {
-            if (queryFlag) {
-                $scope.getQueryVideos();
-            }
-            else {
-                $scope.getGeneralVideo(currentIndex);
+            if (currentIndex <= videoConstants.MAX_VIDEO_COUNT) {
+                console.log("current index is: " + currentIndex);
+                if (queryFlag) {
+                    $scope.getQueryVideos();
+                }
+                else {
+                    $scope.getGeneralVideo(currentIndex);
+                }
             }
         }
 
@@ -223,6 +245,7 @@ angular.module('controllers', [])
             $scope.$emit('subVideoSignal', { vidObj: vidObject, isNewNav: true });
         }
 
+        //when enter an empty string on search, reload.
         $scope.$on('reloadGeneralVideos', function (event) {
             currentIndex = 0;
             $scope.videos = [];
@@ -242,6 +265,27 @@ angular.module('controllers', [])
             $scope.getQueryVideos();
         });
 
+        $scope.$on('MostPinNavTab', function (event) {
+            //cookie to unactivate the navtab
+            queryFlag = false;
+            currentIndex = 0;
+            $scope.videos = [];
+            $scope.queriedVideos = [];
+            videoType = "pin";
+            $scope.getGeneralVideo(currentIndex);
+        });
+
+        $scope.$on('MostViewNavTab', function (event) {
+            //cookie to unactivate the navtab
+            queryFlag = false;
+            currentIndex = 0;
+            $scope.videos = [];
+            $scope.queriedVideos = [];
+            videoType = "view";
+            $scope.getGeneralVideo(currentIndex);
+        })
+
+        //updates tag filter
         $scope.$watchCollection(
         function () {
             return pinTagService.getTags();
@@ -284,6 +328,7 @@ angular.module('controllers', [])
         });
     }])
     .controller('PinCtrl', ['$scope', 'localStorageService', 'generalVideoService', 'pinVidModal',
+        //determine which pinButton to show
         function ($scope, localStorageService, generalVideoService, pinVidModal) {
         $scope.$watch(
             function () {
@@ -291,10 +336,12 @@ angular.module('controllers', [])
             },
             function () {
                 $scope.containPinVid = pinVidModal.containsPinVideo($scope.videobsonid);
-        });
+            });
+
         $scope.pinVideo = function () {
             pinVidModal.pinVid($scope.videobsonid, $scope.title, $scope.embed);
         }
+
         $scope.unPinVideo = function() {
             var vid = { "_id": $scope.videobsonid };
             $scope.$emit('unpin',vid);
